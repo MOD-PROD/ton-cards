@@ -562,9 +562,9 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         let currentCardBackColor = '#b22234';
 
         // Card definitions
-        const SUITS = ['♥', '♦', '♠', '♣', '∇'];
+        const SUITS = ['♥', '♦', '♠', '♣', '∇', 'BTC', 'ETH', 'SOL', 'XMR', 'TRX'];
         const RANKS = ['A'];
-        const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton'};
+        const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton','BTC':'btc','ETH':'eth','SOL':'sol','XMR':'xmr','TRX':'trx'};
         const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif" alt="" onerror="this.style.display='none'">`;
         function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[(i<target?i:i-1)%others.length]}; }
 
@@ -728,7 +728,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             startButton.textContent = 'Shuffling...';
             
             // Check multi-object mode
-            multiObjectMode = numCards <= 5 && document.getElementById('multi-object').checked;
+            multiObjectMode = numCards <= 10 && document.getElementById('multi-object').checked;
 
             // Reset positions and flip all cards face-up
             const positions = getCardPositions(numCards);
@@ -844,7 +844,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             
             if (multiObjectMode) {
                 const targetCard = cards[cardIndices[targetCardIndex]].data;
-                showMessage(`Where is the ${targetCard.rank}${targetCard.suit}?`);
+                showMessage(`Où est l’as ${targetCard.suit}?`);
             } else {
                 showMessage('Où est l’as TON ?');
             }
@@ -984,9 +984,9 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 if (multiObjectMode) {
                     const targetCard = cards[targetIndex].data;
                     if (isCorrect) {
-                        showMessage(`🎉 You found the ${targetCard.rank}${targetCard.suit}!`);
+                        showMessage(`🎉 Tu as trouvé l’as ${targetCard.suit} !`);
                     } else {
-                        showMessage(`❌ That's not the ${targetCard.rank}${targetCard.suit}!`);
+                        showMessage(`❌ Ce n’est pas l’as ${targetCard.suit} !`);
                     }
                 } else {
                 if (isCorrect) {
@@ -1038,7 +1038,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 const newCount = parseInt(e.target.value);
                 if (gameState !== 'STOPPED') { e.target.value = numCards; return; }
                 const mot = document.getElementById('multi-object');
-                mot.disabled = newCount > 5;
+                mot.disabled = newCount > 10;
                 if (mot.disabled) mot.checked = false;
                 setupCards(newCount);
                 updateVal('num-cards', newCount);
@@ -1315,7 +1315,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         // Render animation and encode directly to MP4 using VideoEncoder + mp4-muxer
         async function renderAndEncodeVideo() {
             const cardCount = numCards;
-            const isExportMOT = numCards <= 5 && multiObjectMode;
+            const isExportMOT = numCards <= 10 && multiObjectMode;
             const positions = getCardPositions(cardCount);
             const swapCount = animSettings.swapCount;
             const swapDuration = animSettings.duration;
