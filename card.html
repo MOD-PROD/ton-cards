@@ -413,7 +413,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
         <div id="ui-container">
             <div id="message-box">Observe l’as TON !</div>
-            <div id="target-preview" style="display:flex;justify-content:center;margin:8px auto"><canvas id="target-portrait" width="180" height="180" style="width:132px;height:132px;object-fit:contain" role="img" aria-label="Héros à retrouver"></canvas><img id="target-parade" alt="" style="display:none;width:132px;height:132px;object-fit:contain"></div><p id="instructions" style="display:none"></p>
+            <div id="target-preview" style="display:flex;justify-content:center;margin:8px auto;align-items:center;gap:12px;touch-action:pan-y"><button type="button" id="hero-prev" aria-label="Héros précédent" style="background:transparent;color:#61dfff;border:0;font-size:32px;padding:12px;cursor:pointer">‹</button><canvas id="target-portrait" width="180" height="180" style="width:132px;height:132px;object-fit:contain" role="img" aria-label="Héros à retrouver"></canvas><img id="target-parade" alt="" style="display:none;width:132px;height:132px;object-fit:contain"><button type="button" id="hero-next" aria-label="Héros suivant" style="background:transparent;color:#61dfff;border:0;font-size:32px;padding:12px;cursor:pointer">›</button></div><div id="hero-name" style="text-align:center;color:#c3d0e1;margin-bottom:12px"></div><p id="instructions" style="display:none"></p>
             <button id="start-button">Start Game</button>
         </div>
     </div>
@@ -566,7 +566,9 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         const RANKS = ['A'];
         const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton','BTC':'btc','ETH':'eth','SOL':'sol','XMR':'xmr','TRX':'trx'};
         const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif?v=combat2" alt="" onerror="this.style.display='none'">`;
-        function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[(i<target?i:i-1)%others.length]}; }
+        let selectedHero = '∇';
+        const heroNames = {'∇':'TON','♥':'Cœur','♦':'Carreau','♠':'Pique','♣':'Trèfle',BTC:'BTC',ETH:'ETH',SOL:'SOL',XMR:'XMR',TRX:'TRX'};
+        function heroAt(i, target) { const others = SUITS.filter(s=>s!==selectedHero); return {rank:'A',suit:i===target?selectedHero:others[(i<target?i:i-1)%others.length]}; }
 
         // Generate a deck of cards (excluding Queens for non-queen cards)
         function getRandomCard(excludeQueens = true) {
@@ -739,7 +741,22 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 },10000);
             }).catch(()=>{});
         }
-        showTargetHero('∇');
+        const heroOrder = ['∇', ...SUITS.filter(s=>s!=='∇')];
+        const heroPreview = document.getElementById('target-preview');
+        function selectHero(delta) {
+            if(gameState !== 'STOPPED' || startButton.disabled) return;
+            selectedHero = heroOrder[(heroOrder.indexOf(selectedHero)+delta+heroOrder.length)%heroOrder.length];
+            showTargetHero(selectedHero);
+            document.getElementById('hero-name').textContent = 'As ' + heroNames[selectedHero];
+            messageBox.style.display='none';
+        }
+        document.getElementById('hero-prev').addEventListener('click',()=>selectHero(-1));
+        document.getElementById('hero-next').addEventListener('click',()=>selectHero(1));
+        let swipeX=0,swipeY=0;
+        heroPreview.addEventListener('touchstart',e=>{swipeX=e.touches[0].clientX;swipeY=e.touches[0].clientY;},{passive:true});
+        heroPreview.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-swipeX,dy=e.changedTouches[0].clientY-swipeY;if(Math.abs(dx)>35&&Math.abs(dx)>Math.abs(dy))selectHero(dx<0?1:-1);},{passive:true});
+        showTargetHero(selectedHero);
+        document.getElementById('hero-name').textContent='As TON';
         function showMessage(text) {
             messageBox.textContent = text;
             messageBox.style.display = 'block';
@@ -779,7 +796,9 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 
                 // Generate random distinct cards for this game
                 const motCards = generateMOTCards(numCards);
-                showTargetHero(motCards[targetCardIndex].suit);
+                const existing = motCards.findIndex(c=>c.suit===selectedHero);
+                if(existing>=0) targetCardIndex=existing; else motCards[targetCardIndex]={rank:'A',suit:selectedHero,name:'A'+selectedHero};
+                showTargetHero(selectedHero);
                 showMessage('Observe le héros à retrouver !');
                 
                 cards.forEach((card, i) => {
@@ -809,8 +828,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 });
             } else {
                 // SOT: Single queen mode (original behavior)
-                showMessage('Observe l’as TON !');
-                showTargetHero('∇');
+                showMessage('Observe l’as '+heroNames[selectedHero]+' !');
+                showTargetHero(selectedHero);
                 queenIndex = Math.floor(Math.random() * numCards);
             
             // Regenerate cards with new random non-queen cards
@@ -881,7 +900,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 const targetCard = cards[cardIndices[targetCardIndex]].data;
                 showMessage(`Où est l’as ${targetCard.suit}?`);
             } else {
-                showMessage('Où est l’as TON ?');
+                showMessage('Où est l’as '+heroNames[selectedHero]+' ?');
             }
         }
 
@@ -995,8 +1014,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 isCorrect = (clickedIndex === targetIndex);
             } else {
                 // SOT mode: find the queen
-                targetIndex = cards.findIndex(card => card.data.suit === '∇');
-                isCorrect = cards[clickedIndex].data.suit === '∇';
+                targetIndex = cards.findIndex(card => card.data.suit === selectedHero);
+                isCorrect = cards[clickedIndex].data.suit === selectedHero;
             }
 
             // Flip cards face-up with stagger
@@ -1025,9 +1044,9 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                     }
                 } else {
                 if (isCorrect) {
-                    showMessage('🎉 Tu as trouvé l’as TON !');
+                    showMessage('🎉 Tu as trouvé l’as '+heroNames[selectedHero]+' !');
                 } else {
-                    showMessage('❌ Ce n’est pas l’as TON. Réessaie !');
+                    showMessage('❌ Ce n’est pas l’as '+heroNames[selectedHero]+'. Réessaie !');
                     }
                 }
                 startButton.disabled = false;
