@@ -413,7 +413,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
         <div id="ui-container">
             <div id="message-box">Observe l’as TON !</div>
-            <p id="instructions">Observe l’as TON, suis les cinq héros pendant le mélange puis retrouve sa carte.</p>
+            <div id="target-preview" style="display:flex;justify-content:center;margin:8px auto"><canvas id="target-portrait" width="180" height="180" style="width:132px;height:132px;object-fit:contain" role="img" aria-label="Héros à retrouver"></canvas><img id="target-parade" alt="" style="display:none;width:132px;height:132px;object-fit:contain"></div><p id="instructions" style="display:none"></p>
             <button id="start-button">Start Game</button>
         </div>
     </div>
@@ -708,6 +708,57 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         setupCards(numCards);
 
         // --- Show Message ---
+        const portrait = document.getElementById('target-portrait');
+        const parade = document.getElementById('target-parade');
+        let previewGeneration = 0, previewTimer, previewEnd, previewURL;
+        async function showTargetHero(suit) {
+            const generation = ++previewGeneration;
+            clearInterval(previewTimer); clearTimeout(previewEnd);
+            if (previewURL) { URL.revokeObjectURL(previewURL); previewURL = null; }
+            parade.style.display = 'none'; portrait.style.display = 'block';
+            const ctx = portrait.getContext('2d');
+            ctx.clearRect(0,0,180,180);
+            const url = 'assets/heroes/' + heroFiles[suit] + '.gif';
+            try {
+                const blob = await (await fetch(url)).blob();
+                if (generation !== previewGeneration) return;
+                previewURL = URL.createObjectURL(blob);
+                const draw = frame => {
+                    const w = frame.displayWidth || frame.naturalWidth, h = frame.displayHeight || frame.naturalHeight;
+                    const scale = Math.min(180/w,180/h);
+                    ctx.clearRect(0,0,180,180);
+                    ctx.drawImage(frame,(180-w*scale)/2,(180-h*scale)/2,w*scale,h*scale);
+                };
+                let duration = 1080, decoded = false;
+                if (typeof ImageDecoder !== 'undefined') {
+                    try {
+                        const decoder = new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});
+                        await decoder.tracks.ready;
+                        let total = 0;
+                        for(let i=0;i<decoder.tracks.selectedTrack.frameCount;i++){
+                            const {image} = await decoder.decode({frameIndex:i});
+                            if(i===0 && generation===previewGeneration) draw(image);
+                            total += image.duration || 120000; image.close();
+                        }
+                        decoder.close(); duration = total/1000; decoded = true;
+                    } catch(e) {}
+                }
+                if (!decoded) {
+                    const img = new Image();
+                    await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=previewURL;});
+                    if(generation!==previewGeneration) return;
+                    draw(img);
+                }
+                if(generation!==previewGeneration) return;
+                previewTimer = setInterval(()=>{
+                    if(generation!==previewGeneration) return;
+                    const replay = URL.createObjectURL(blob);
+                    parade.src = replay; portrait.style.display='none'; parade.style.display='block';
+                    previewEnd = setTimeout(()=>{parade.style.display='none';portrait.style.display='block';parade.removeAttribute('src');URL.revokeObjectURL(replay);},duration);
+                },10000);
+            } catch(e) { if(generation===previewGeneration) portrait.setAttribute('aria-label','Héros indisponible'); }
+        }
+        showTargetHero('∇');
         function showMessage(text) {
             messageBox.textContent = text;
             messageBox.style.display = 'block';
@@ -747,6 +798,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 
                 // Generate random distinct cards for this game
                 const motCards = generateMOTCards(numCards);
+                showTargetHero(motCards[targetCardIndex].suit);
+                showMessage('Observe le héros à retrouver !');
                 
                 cards.forEach((card, i) => {
                     const cardData = motCards[i];
@@ -776,6 +829,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             } else {
                 // SOT: Single queen mode (original behavior)
                 showMessage('Observe l’as TON !');
+                showTargetHero('∇');
                 queenIndex = Math.floor(Math.random() * numCards);
             
             // Regenerate cards with new random non-queen cards
