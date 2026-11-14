@@ -617,7 +617,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             card.appendChild(inner);
 
             // Click handler
-            card.addEventListener('click', () => onCardClick(index));
+            card.addEventListener('click', () => onCardClick(cards.findIndex(entry => entry.element === card)));
 
             return card;
         }
@@ -753,7 +753,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
         // --- Card Click Handler ---
         function onCardClick(clickedIndex) {
-            if (gameState !== 'AWAITING_GUESS') return;
+            if (gameState !== 'AWAITING_GUESS' || clickedIndex < 0) return;
             handleGuess(clickedIndex);
         }
 
@@ -801,7 +801,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                             <div class="rank" style="font-size:${rankSize}px">${cardData.rank}</div>
                             <div class="suit-small" style="font-size:${suitSmallSize}px">${cardData.suit}</div>
                         </div>
-                        <div class="center-suit" style="font-size:${centerSuitSize}px">${cardData.suit}</div>
+                        <div class="center-suit" style="font-size:${centerSuitSize}px">${cardData.suit}${heroImage(cardData.suit)}</div>
                         <div class="corner corner-bottom">
                             <div class="rank" style="font-size:${rankSize}px">${cardData.rank}</div>
                             <div class="suit-small" style="font-size:${suitSmallSize}px">${cardData.suit}</div>
@@ -878,10 +878,10 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
             gameState = 'AWAITING_GUESS';
             startButton.disabled = true;
-            startButton.textContent = 'Make your guess!';
+            startButton.textContent = 'Choisis une carte !';
             
             if (multiObjectMode) {
-                const targetCard = cards[targetCardIndex].data;
+                const targetCard = cards[cardIndices[targetCardIndex]].data;
                 showMessage(`Where is the ${targetCard.rank}${targetCard.suit}?`);
             } else {
                 showMessage('Où est l’as TON ?');
@@ -998,8 +998,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 isCorrect = (clickedIndex === targetIndex);
             } else {
                 // SOT mode: find the queen
-                isCorrect = (clickedIndex === queenIndex);
-                targetIndex = queenIndex;
+                targetIndex = cards.findIndex(card => card.data.suit === '∇');
+                isCorrect = cards[clickedIndex].data.suit === '∇';
             }
 
             // Flip cards face-up with stagger
@@ -1030,11 +1030,11 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 if (isCorrect) {
                     showMessage('🎉 Tu as trouvé l’as TON !');
                 } else {
-                    showMessage('❌ Wrong card! Try again.');
+                    showMessage('❌ Ce n’est pas l’as TON. Réessaie !');
                     }
                 }
                 startButton.disabled = false;
-                startButton.textContent = 'Play Again';
+                startButton.textContent = 'Rejouer';
             }, numCards * 100 + 300);
         }
 
