@@ -422,7 +422,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         <h3>🎴 Game Setup</h3>
         <div class="control-row">
             <label>Number of Cards</label>
-            <input type="range" id="num-cards" min="5" max="5" value="5">
+            <input type="range" id="num-cards" min="3" max="10" value="5">
             <span class="value" id="num-cards-val">5</span>
         </div>
         <div class="control-row">
@@ -566,7 +566,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         const RANKS = ['A'];
         const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton'};
         const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif" alt="" onerror="this.style.display='none'">`;
-        function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[i<target?i:i-1]}; }
+        function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[(i<target?i:i-1)%others.length]}; }
 
         // Generate a deck of cards (excluding Queens for non-queen cards)
         function getRandomCard(excludeQueens = true) {
@@ -624,57 +624,19 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
         // Calculate card dimensions based on number of cards
         function calculateCardDimensions(n) {
-            const padding = 40; // Padding on each side
-            const availableWidth = CANVAS_WIDTH - padding * 2;
-            const availableHeight = CANVAS_HEIGHT - padding * 2;
-            
-            // Calculate max card width that fits all cards with spacing
-            const minSpacing = 15;
-            const maxCardWidth = (availableWidth - (n - 1) * minSpacing) / n;
-            
-            // Calculate max card height that fits vertically
-            const maxCardHeight = availableHeight * 0.85;
-            
-            // Determine card size maintaining aspect ratio
-            let cardWidth = Math.min(maxCardWidth, BASE_CARD_WIDTH);
-            let cardHeight = cardWidth * CARD_ASPECT_RATIO;
-            
-            // If height exceeds max, scale down
-            if (cardHeight > maxCardHeight) {
-                cardHeight = maxCardHeight;
-                cardWidth = cardHeight / CARD_ASPECT_RATIO;
-            }
-            
-            // Calculate spacing
-            const totalCardsWidth = n * cardWidth;
-            const spacing = (availableWidth - totalCardsWidth) / (n - 1 || 1);
-            
-            return {
-                width: cardWidth,
-                height: cardHeight,
-                spacing: Math.max(minSpacing, Math.min(spacing, 40))
-            };
+            const cols = Math.min(n, 5), rows = Math.ceil(n / 5);
+            const spacing = 15;
+            const width = Math.min(BASE_CARD_WIDTH, (CANVAS_WIDTH - 48 - (cols - 1)*spacing)/cols, (CANVAS_HEIGHT - 48 - (rows-1)*24)/rows/CARD_ASPECT_RATIO);
+            return {width, height:width*CARD_ASPECT_RATIO, spacing};
         }
-
-        // Get card positions
         function getCardPositions(n) {
             const dims = calculateCardDimensions(n);
-            CARD_WIDTH = dims.width;
-            CARD_HEIGHT = dims.height;
-            CARD_SPACING = dims.spacing;
-            
-            const positions = [];
-            const totalWidth = (n - 1) * (CARD_WIDTH + CARD_SPACING) + CARD_WIDTH;
-            const startX = (CANVAS_WIDTH - totalWidth) / 2 + CARD_WIDTH / 2;
-            const centerY = CANVAS_HEIGHT / 2;
-
-            for (let i = 0; i < n; i++) {
-                positions.push({
-                    x: startX + i * (CARD_WIDTH + CARD_SPACING),
-                    y: centerY
-                });
-            }
-            return positions;
+            CARD_WIDTH = dims.width; CARD_HEIGHT = dims.height; CARD_SPACING = dims.spacing;
+            const rows = Math.ceil(n/5), stepY = CARD_HEIGHT + 24;
+            return Array.from({length:n}, (_,i)=>{
+                const row = Math.floor(i/5), col=i%5, count=Math.min(5,n-row*5);
+                return {x:CANVAS_WIDTH/2+(col-(count-1)/2)*(CARD_WIDTH+CARD_SPACING), y:CANVAS_HEIGHT/2+(row-(rows-1)/2)*stepY};
+            });
         }
 
         // Setup cards
@@ -766,7 +728,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             startButton.textContent = 'Shuffling...';
             
             // Check multi-object mode
-            multiObjectMode = document.getElementById('multi-object').checked;
+            multiObjectMode = numCards <= 5 && document.getElementById('multi-object').checked;
 
             // Reset positions and flip all cards face-up
             const positions = getCardPositions(numCards);
@@ -932,7 +894,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                     .onUpdate(() => {
                         const t = animA.t;
                         const x = startAX + (startBX - startAX) * t;
-                        const y = startAY - arcHeight * Math.sin(t * Math.PI);
+                        const y = Math.max(CARD_HEIGHT/2+4, Math.min(CANVAS_HEIGHT-CARD_HEIGHT/2-4, startAY+(startBY-startAY)*t - arcHeight*Math.sin(t*Math.PI)));
                         const scale = 1;
                         updateCardPosition(cardA, x, y, scale);
                         cardA.element.style.zIndex = 10;
@@ -946,7 +908,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                     .onUpdate(() => {
                         const t = animB.t;
                         const x = startBX + (startAX - startBX) * t;
-                        const y = startBY + arcHeight * Math.sin(t * Math.PI);
+                        const y = Math.max(CARD_HEIGHT/2+4, Math.min(CANVAS_HEIGHT-CARD_HEIGHT/2-4, startBY+(startAY-startBY)*t + arcHeight*Math.sin(t*Math.PI)));
                         const scale = 1;
                         updateCardPosition(cardB, x, y, scale);
                         cardB.element.style.zIndex = 5;
@@ -955,8 +917,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                         // Reset z-index
                         cardA.element.style.zIndex = '';
                         cardB.element.style.zIndex = '';
-                        updateCardPosition(cardA, startBX, startAY, 1);
-                        updateCardPosition(cardB, startAX, startBY, 1);
+                        updateCardPosition(cardA, startBX, startBY, 1);
+                        updateCardPosition(cardB, startAX, startAY, 1);
 
                         // Swap in the array
                         [cards[indexA], cards[indexB]] = [cards[indexB], cards[indexA]];
@@ -1074,10 +1036,12 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             // Number of cards
             document.getElementById('num-cards').addEventListener('input', (e) => {
                 const newCount = parseInt(e.target.value);
-                if (gameState === 'STOPPED') {
-                    setupCards(newCount);
-                }
-                updateVal('num-cards', e.target.value);
+                if (gameState !== 'STOPPED') { e.target.value = numCards; return; }
+                const mot = document.getElementById('multi-object');
+                mot.disabled = newCount > 5;
+                if (mot.disabled) mot.checked = false;
+                setupCards(newCount);
+                updateVal('num-cards', newCount);
             });
 
             // Animation controls
@@ -1351,7 +1315,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         // Render animation and encode directly to MP4 using VideoEncoder + mp4-muxer
         async function renderAndEncodeVideo() {
             const cardCount = numCards;
-            const isExportMOT = multiObjectMode;
+            const isExportMOT = numCards <= 5 && multiObjectMode;
             const positions = getCardPositions(cardCount);
             const swapCount = animSettings.swapCount;
             const swapDuration = animSettings.duration;
@@ -1384,7 +1348,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                         const q = getQueen();
                         cardDataArray.push({ rank: q.rank, suit: q.suit, name: `${q.rank}${q.suit}`, color: '#c41e3a' });
                     } else {
-                        const c = getRandomCard();
+                        const c = heroAt(i, exportQueenIndex);
                         const isRed = c.suit === '♥' || c.suit === '♦';
                         cardDataArray.push({ rank: c.rank, suit: c.suit, name: `${c.rank}${c.suit}`, color: isRed ? '#c41e3a' : '#1a1a1a' });
                     }
@@ -1589,13 +1553,13 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
                         // Card A goes up
                         cardPos[cardAIdx].x = posA.x + (posB.x - posA.x) * eased;
-                        cardPos[cardAIdx].y = posA.y - currentArcHeight * Math.sin(swapProgress * Math.PI);
+                        cardPos[cardAIdx].y = Math.max(CARD_HEIGHT/2+4,Math.min(CANVAS_HEIGHT-CARD_HEIGHT/2-4,posA.y+(posB.y-posA.y)*eased-currentArcHeight*Math.sin(swapProgress*Math.PI)));
                         cardPos[cardAIdx].scale = 1;
                         cardPos[cardAIdx].zIndex = 10;
 
                         // Card B goes down
                         cardPos[cardBIdx].x = posB.x + (posA.x - posB.x) * eased;
-                        cardPos[cardBIdx].y = posB.y + currentArcHeight * Math.sin(swapProgress * Math.PI);
+                        cardPos[cardBIdx].y = Math.max(CARD_HEIGHT/2+4,Math.min(CANVAS_HEIGHT-CARD_HEIGHT/2-4,posB.y+(posA.y-posB.y)*eased+currentArcHeight*Math.sin(swapProgress*Math.PI)));
                         cardPos[cardBIdx].scale = 1;
                         cardPos[cardBIdx].zIndex = 5;
                     }
