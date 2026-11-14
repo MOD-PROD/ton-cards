@@ -1,0 +1,13 @@
+{
+  "access": "open",
+  "beta": true,
+  "installBanner": true,
+  "announce": "",
+  "tiers": {},
+  "travaux": {
+    "gauche": "",
+    "droite": "",
+    "bas": "",
+    "mode": "construction"
+  }
+}
