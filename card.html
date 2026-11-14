@@ -565,7 +565,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         const SUITS = ['♥', '♦', '♠', '♣', '∇', 'BTC', 'ETH', 'SOL', 'XMR', 'TRX'];
         const RANKS = ['A'];
         const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton','BTC':'btc','ETH':'eth','SOL':'sol','XMR':'xmr','TRX':'trx'};
-        const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif" alt="" onerror="this.style.display='none'">`;
+        const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif?v=combat2" alt="" onerror="this.style.display='none'">`;
         function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[(i<target?i:i-1)%others.length]}; }
 
         // Generate a deck of cards (excluding Queens for non-queen cards)
@@ -711,52 +711,33 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         const portrait = document.getElementById('target-portrait');
         const parade = document.getElementById('target-parade');
         let previewGeneration = 0, previewTimer, previewEnd, previewURL;
-        async function showTargetHero(suit) {
+        function showTargetHero(suit) {
             const generation = ++previewGeneration;
             clearInterval(previewTimer); clearTimeout(previewEnd);
-            if (previewURL) { URL.revokeObjectURL(previewURL); previewURL = null; }
-            parade.style.display = 'none'; portrait.style.display = 'block';
+            if (previewURL) URL.revokeObjectURL(previewURL);
+            parade.removeAttribute('src'); parade.style.display='none'; portrait.style.display='block';
             const ctx = portrait.getContext('2d');
             ctx.clearRect(0,0,180,180);
-            const url = 'assets/heroes/' + heroFiles[suit] + '.gif';
-            try {
-                const blob = await (await fetch(url)).blob();
-                if (generation !== previewGeneration) return;
-                previewURL = URL.createObjectURL(blob);
-                const draw = frame => {
-                    const w = frame.displayWidth || frame.naturalWidth, h = frame.displayHeight || frame.naturalHeight;
-                    const scale = Math.min(180/w,180/h);
-                    ctx.clearRect(0,0,180,180);
-                    ctx.drawImage(frame,(180-w*scale)/2,(180-h*scale)/2,w*scale,h*scale);
-                };
-                let duration = 1080, decoded = false;
-                if (typeof ImageDecoder !== 'undefined') {
-                    try {
-                        const decoder = new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});
-                        await decoder.tracks.ready;
-                        let total = 0;
-                        for(let i=0;i<decoder.tracks.selectedTrack.frameCount;i++){
-                            const {image} = await decoder.decode({frameIndex:i});
-                            if(i===0 && generation===previewGeneration) draw(image);
-                            total += image.duration || 120000; image.close();
-                        }
-                        decoder.close(); duration = total/1000; decoded = true;
-                    } catch(e) {}
-                }
-                if (!decoded) {
-                    const img = new Image();
-                    await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=previewURL;});
-                    if(generation!==previewGeneration) return;
-                    draw(img);
-                }
+            const url = 'assets/heroes/' + heroFiles[suit] + '.gif?v=combat2';
+            const img = new Image();
+            img.onload = () => {
                 if(generation!==previewGeneration) return;
-                previewTimer = setInterval(()=>{
-                    if(generation!==previewGeneration) return;
-                    const replay = URL.createObjectURL(blob);
-                    parade.src = replay; portrait.style.display='none'; parade.style.display='block';
-                    previewEnd = setTimeout(()=>{parade.style.display='none';portrait.style.display='block';parade.removeAttribute('src');URL.revokeObjectURL(replay);},duration);
+                const scale=Math.min(180/img.naturalWidth,180/img.naturalHeight);
+                ctx.drawImage(img,(180-img.naturalWidth*scale)/2,(180-img.naturalHeight*scale)/2,img.naturalWidth*scale,img.naturalHeight*scale);
+            };
+            img.src=url;
+            fetch(url).then(r=>{if(!r.ok)throw Error('GIF');return r.blob();}).then(blob=>{
+                if(generation!==previewGeneration)return;
+                previewTimer=setInterval(()=>{
+                    if(generation!==previewGeneration)return;
+                    previewURL=URL.createObjectURL(blob);
+                    parade.src=previewURL; portrait.style.display='none'; parade.style.display='block';
+                    previewEnd=setTimeout(()=>{
+                        parade.style.display='none';portrait.style.display='block';parade.removeAttribute('src');
+                        URL.revokeObjectURL(previewURL);previewURL=null;
+                    },1080);
                 },10000);
-            } catch(e) { if(generation===previewGeneration) portrait.setAttribute('aria-label','Héros indisponible'); }
+            }).catch(()=>{});
         }
         showTargetHero('∇');
         function showMessage(text) {
