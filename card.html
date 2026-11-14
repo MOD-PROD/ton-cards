@@ -402,6 +402,7 @@ body{display:block;background:#090d15;color:#eef5ff;padding:12px;min-width:0;ove
 #mod-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;max-width:900px;margin:0 auto 20px;flex-wrap:wrap}#mod-nav a,#mod-nav button{font:inherit;color:#eef5ff;background:#19263a;border:1px solid #34445d;border-radius:10px;padding:10px 14px;text-decoration:none;cursor:pointer}
 body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper{position:absolute;left:-10000px;top:0;width:min(900px,calc(100vw - 24px));pointer-events:none}
 #stage-fit{width:100%;max-width:640px;position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:16px}#canvas-container{position:absolute;top:0;left:0;transform-origin:top left;flex:none}
+.card-front .center-suit{position:static}.hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;border-radius:8px}.card-front:has(.hero-image){overflow:hidden}.card-front .corner{z-index:1;display:none}
 </style>
 </head>
 <body><nav id="mod-nav"><a href="index.html">‹ Accueil</a><button type="button" id="mod-settings" aria-expanded="false">⚙ Réglages</button></nav>
@@ -411,8 +412,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         <div id="stage-fit"><div id="canvas-container"><div id="cards-container"></div></div></div>
 
         <div id="ui-container">
-            <div id="message-box">Watch the Queen!</div>
-            <p id="instructions">Click <strong>Start Game</strong> to begin. Watch carefully as the Queen is revealed, then track it as the cards shuffle. Click the card you believe is the Queen!</p>
+            <div id="message-box">Observe l’as TON !</div>
+            <p id="instructions">Observe l’as TON, suis les cinq héros pendant le mélange puis retrouve sa carte.</p>
             <button id="start-button">Start Game</button>
         </div>
     </div>
@@ -421,8 +422,8 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         <h3>🎴 Game Setup</h3>
         <div class="control-row">
             <label>Number of Cards</label>
-            <input type="range" id="num-cards" min="3" max="7" value="3">
-            <span class="value" id="num-cards-val">3</span>
+            <input type="range" id="num-cards" min="5" max="5" value="5">
+            <span class="value" id="num-cards-val">5</span>
         </div>
         <div class="control-row">
             <label>Multi-Object Tracking</label>
@@ -509,7 +510,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         let gameState = 'STOPPED'; // STOPPED, RUNNING, SHUFFLING, AWAITING_GUESS
         let cards = [];
         let queenIndex = 1; // The Queen starts in the middle
-        let numCards = 3;
+        let numCards = 5;
         let multiObjectMode = false; // Multi-object tracking mode
         let targetCardIndex = 0; // Which card to find in MOT mode
         let cardIndices = []; // Tracks positions of all cards in MOT mode
@@ -561,8 +562,11 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
         let currentCardBackColor = '#b22234';
 
         // Card definitions
-        const SUITS = ['♥', '♦', '♠', '♣'];
-        const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const SUITS = ['♥', '♦', '♠', '♣', '∇'];
+        const RANKS = ['A'];
+        const heroFiles = {'♥':'heart','♦':'diamond','♠':'spade','♣':'club','∇':'ton'};
+        const heroImage = suit => `<img class="hero-image" src="assets/heroes/${heroFiles[suit]}.gif" alt="" onerror="this.style.display='none'">`;
+        function heroAt(i, target) { const others = SUITS.filter(s=>s!=='∇'); return {rank:'A',suit:i===target?'∇':others[i<target?i:i-1]}; }
 
         // Generate a deck of cards (excluding Queens for non-queen cards)
         function getRandomCard(excludeQueens = true) {
@@ -574,7 +578,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
         // Get Queen of Hearts
         function getQueen() {
-            return { rank: 'Q', suit: '♥' };
+            return { rank: 'A', suit: '∇' };
         }
 
         // Create card DOM element
@@ -597,7 +601,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                     <div class="rank">${cardData.rank}</div>
                     <div class="suit-small">${cardData.suit}</div>
                 </div>
-                <div class="center-suit">${cardData.suit}</div>
+                <div class="center-suit">${cardData.suit}${heroImage(cardData.suit)}</div>
                 <div class="corner corner-bottom">
                     <div class="rank">${cardData.rank}</div>
                     <div class="suit-small">${cardData.suit}</div>
@@ -690,7 +694,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
             const centerSuitSize = Math.round(72 * scaleFactor);
 
             for (let i = 0; i < count; i++) {
-                const cardData = i === queenIndex ? getQueen() : getRandomCard();
+                const cardData = heroAt(i, queenIndex);
                 const cardEl = createCardElement(cardData, i);
                 
                 // Apply dynamic card size
@@ -809,12 +813,12 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 });
             } else {
                 // SOT: Single queen mode (original behavior)
-                showMessage('Watch the Queen!');
+                showMessage('Observe l’as TON !');
                 queenIndex = Math.floor(Math.random() * numCards);
             
             // Regenerate cards with new random non-queen cards
             cards.forEach((card, i) => {
-                const cardData = i === queenIndex ? getQueen() : getRandomCard();
+                const cardData = heroAt(i, queenIndex);
                 card.data = cardData;
                 
                 // Update card front content (inside card-inner)
@@ -826,7 +830,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                         <div class="rank" style="font-size:${rankSize}px">${cardData.rank}</div>
                         <div class="suit-small" style="font-size:${suitSmallSize}px">${cardData.suit}</div>
                     </div>
-                    <div class="center-suit" style="font-size:${centerSuitSize}px">${cardData.suit}</div>
+                    <div class="center-suit" style="font-size:${centerSuitSize}px">${cardData.suit}${heroImage(cardData.suit)}</div>
                     <div class="corner corner-bottom">
                         <div class="rank" style="font-size:${rankSize}px">${cardData.rank}</div>
                         <div class="suit-small" style="font-size:${suitSmallSize}px">${cardData.suit}</div>
@@ -835,7 +839,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
 
                 updateCardPosition(card, positions[i].x, positions[i].y, 1);
                 // SOT: Only show the Queen face-up, keep others face-down
-                flipCard(card, i === queenIndex);
+                flipCard(card, true);
             });
             }
 
@@ -880,7 +884,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                 const targetCard = cards[targetCardIndex].data;
                 showMessage(`Where is the ${targetCard.rank}${targetCard.suit}?`);
             } else {
-                showMessage('Where is the Queen?');
+                showMessage('Où est l’as TON ?');
             }
         }
 
@@ -1024,7 +1028,7 @@ body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper
                     }
                 } else {
                 if (isCorrect) {
-                    showMessage('🎉 You found the Queen!');
+                    showMessage('🎉 Tu as trouvé l’as TON !');
                 } else {
                     showMessage('❌ Wrong card! Try again.');
                     }
