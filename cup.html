@@ -231,9 +231,22 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
-    </style>
+    
+body{display:block;background:#090d15;color:#eef5ff;padding:12px;min-width:0;overflow-x:hidden}
+#game-wrapper{width:100%;max-width:900px;margin:0 auto;gap:16px;min-width:0}
+#game-title{color:#eef5ff;font-size:clamp(24px,5vw,36px)}
+#game-title::after{background:#6edbff}
+#ui-container{width:100%;max-width:640px;background:#131e2e;border-color:#34445d;padding:16px}
+#instructions{color:#c3d0e1}#message-box{background:#18263a;color:#eef5ff;border-color:#34445d}
+#start-button,.panel-button{background:#17638a;color:white}
+#control-panel{display:none;width:100%;max-width:720px;margin:0 auto;max-height:none;overflow:visible;background:#131e2e;color:#eef5ff;border-color:#34445d;padding:20px}
+#control-panel h3,#control-panel label{color:#eef5ff}#control-panel h3{border-color:#34445d}.control-row{gap:12px;min-height:36px}.control-row label{min-width:0}.control-row input[type=range]{width:clamp(90px,32vw,220px);accent-color:#6edbff}
+#mod-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;max-width:900px;margin:0 auto 20px;flex-wrap:wrap}#mod-nav a,#mod-nav button{font:inherit;color:#eef5ff;background:#19263a;border:1px solid #34445d;border-radius:10px;padding:10px 14px;text-decoration:none;cursor:pointer}
+body.settings-mode #control-panel{display:block}body.settings-mode #game-wrapper{position:absolute;left:-10000px;top:0;width:min(900px,calc(100vw - 24px));pointer-events:none}
+#canvas-container{width:100%;max-width:900px;height:auto;aspect-ratio:4/3;min-height:0}#canvas-container canvas{display:block;max-width:100%}
+</style>
 </head>
-<body>
+<body><nav id="mod-nav"><a href="index.html">‹ Accueil</a><button type="button" id="mod-settings" aria-expanded="false">⚙ Réglages</button></nav>
     <div id="game-wrapper">
         <h1 id="game-title">The Cups Game</h1>
         
@@ -1971,5 +1984,9 @@
         // Start the render loop!
         animate();
     </script>
-</body>
+<script>
+(()=>{const b=document.getElementById('mod-settings'), panel=document.getElementById('control-panel'), game=document.getElementById('game-wrapper');function toggle(){const open=document.body.classList.toggle('settings-mode');b.textContent=open?'‹ Retour au jeu':'⚙ Réglages';b.setAttribute('aria-expanded',String(open));game.inert=open;panel.inert=!open;window.scrollTo(0,0);requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')))}panel.inert=true;b.addEventListener('click',toggle);
+
+})();
+</script></body>
 </html>
