@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "T∇NC∆RDS",
+  "short_name": "TON Cards",
+  "lang": "fr",
+  "start_url": "/card.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090d15",
+  "theme_color": "#090d15",
+  "icons": [
+    {
+      "src": "/assets/ton-cards-scintillement-intense.webp",
+      "sizes": "1254x1254",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
