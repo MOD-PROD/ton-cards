@@ -9,5 +9,63 @@
     "droite": "",
     "bas": "",
     "mode": "construction"
-  }
+  },
+  "cardModes": [
+    {
+      "enabled": "on",
+      "tracking": "single",
+      "cards": 5,
+      "swaps": 5,
+      "duration": 2000,
+      "arc": 90,
+      "table": "#225533",
+      "texture": "felt",
+      "scale": 100,
+      "back": "#b22234",
+      "accent": "#ffd700",
+      "name": "Classic TON"
+    },
+    {
+      "enabled": "on",
+      "tracking": "single",
+      "cards": 5,
+      "swaps": 8,
+      "duration": 1500,
+      "arc": 90,
+      "table": "#123047",
+      "texture": "carbon",
+      "scale": 100,
+      "back": "#123d65",
+      "accent": "#61dfff",
+      "name": "TON Carbon"
+    },
+    {
+      "enabled": "on",
+      "tracking": "single",
+      "cards": 6,
+      "swaps": 10,
+      "duration": 1200,
+      "arc": 90,
+      "table": "#382811",
+      "texture": "honeycomb",
+      "scale": 100,
+      "back": "#36240e",
+      "accent": "#f6b73c",
+      "name": "Bitcoin Edition"
+    },
+    {
+      "enabled": "on",
+      "tracking": "multi",
+      "cards": 8,
+      "swaps": 12,
+      "duration": 1000,
+      "arc": 90,
+      "table": "#29203e",
+      "texture": "metal",
+      "scale": 100,
+      "back": "#38234e",
+      "accent": "#bf91ff",
+      "name": "Wallet Challenge"
+    }
+  ]
 }
